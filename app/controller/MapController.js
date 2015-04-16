@@ -29,11 +29,27 @@ Ext.define('LiveUpdates.controller.MapController', {
         {
             ref: 'locationsList',
             selector: 'currentlocationsgridpanel'
+        },
+        {
+            ref: 'btnClear',
+            selector: 'currentlocationsgridpanel #btnClear'
         }
     ],
 
     onGridpanelSelectionChange: function(model, selected, eOpts) {
-        console.log('locationsList selection change fired');
+        this.showSelected(!Ext.isEmpty(selected) ? selected[0]: null);
+        this.getBtnClear.setVisible(!Ext.isEmpty(selected));
+    },
+
+    onBtnResetClick: function(button, e, eOpts) {
+        //this.getLocationsList().getSelectionModel().deselectAll();
+        this.resetMap();
+
+    },
+
+    onBtnTrafficToggle: function(button, pressed, eOpts) {
+        this._trafficLayer.setMap(pressed ? this._map : null);
+        button.setText(pressed ? 'Hide Traffic' : 'Show Traffic');
     },
 
     init: function(application) {
@@ -51,6 +67,12 @@ Ext.define('LiveUpdates.controller.MapController', {
         this.control({
             "gridpanel": {
                 selectionchange: this.onGridpanelSelectionChange
+            },
+            "mappanel #btnReset": {
+                click: this.onBtnResetClick
+            },
+            "mappanel #btnTraffic": {
+                toggle: this.onBtnTrafficToggle
             }
         });
     },
@@ -60,6 +82,8 @@ Ext.define('LiveUpdates.controller.MapController', {
             zoom: 5,
             center:  new google.maps.LatLng(54.559322587438636, -4.1748046875)
         });
+
+        this._trafficLayer = new google.maps.TrafficLayer();
 
         this.drawMarkers();
         this.resetMap();
@@ -85,7 +109,8 @@ Ext.define('LiveUpdates.controller.MapController', {
                 labelContent: r.get('UnitName'),
                 labelAnchor: this.getUnitMarkerLabelPosition(mapIcon),
                 labelClass: 'untLabel',
-                inJourney: r.get('InJourney')
+                inJourney: r.get('InJourney'),
+                untID: r.getId()
 
             };
 
@@ -153,7 +178,7 @@ Ext.define('LiveUpdates.controller.MapController', {
             return new google.maps.Point(40, -10);
         }
         else {
-            return new google.maps.Point(50, -8);
+            return new google.maps.Point(40, -8);
         }
     },
 
@@ -196,7 +221,7 @@ Ext.define('LiveUpdates.controller.MapController', {
                 if(marker.infoWindowIsOpen===true) {
                     marker.infoWindow.close();
                     marker.infoWindow.setContent(this.untInfoWindowContent(marker, r.data));
-                    marker.infoWindow.open(gmap, marker);
+                    marker.infoWindow.open(this._map, marker);
                 } else {
                     marker.infoWindow.setContent(this.untInfoWindowContent(marker, r.data));
                 }
@@ -220,7 +245,7 @@ Ext.define('LiveUpdates.controller.MapController', {
 
                         });
                         google.maps.event.addListener(iw,'closeclick', Ext.Function.bind(this.markerInfoWindowClose, this, [marker,iw]));
-                        Marker.infoWindow=iw;
+                        marker.infoWindow=iw;
                     }
                 }
                 marker.infoWindow.open(this._map, marker);
@@ -230,8 +255,7 @@ Ext.define('LiveUpdates.controller.MapController', {
     },
 
     untInfoWindowContent: function(marker, d) {
-        var app = this.getApplication();
-        return "<div class='untInfoWindow'>"+"<div><div style='display:inline-block;'><img src='resources/images/"+(d.InJourney === true ? "green_vehicle_icon": "red_vehicle_icon")+".png'>&nbsp;<span style='position:relative; top:-7px;left:2px; display:inline-block;'><b>"+d.UnitName+"</b></span></div><div style='display:inline-block; float:right; padding-right: 5px;'></div></div>"+"<div><b>"+d.EventDTDisplay+"</b>: "+d.Location+"</div>"+"</div>";
+        return this.app.getLastReportedEventHtml(this.getLastReportedEventStore().getById(marker.untID));
     },
 
     markerInfoWindowClose: function(marker) {
@@ -241,10 +265,38 @@ Ext.define('LiveUpdates.controller.MapController', {
     hideMarkerInfoWindow: function(marker) {
 
         if (Ext.isObject(marker) && Ext.isObject(marker.infoWindow)) {
-            Marker.infoWindow.close();
-            Marker.infoWindowIsOpen=false;
+            marker.infoWindow.close();
+            marker.infoWindowIsOpen=false;
 
         }
+
+    },
+
+    showSelected: function(record) {
+        if(!Ext.isEmpty(record)) {
+            this.getMapMarkerStore().each(function(rec){
+                rec.get('Marker').setVisible(rec.get('UntID')===record.get('UntID'));
+                if(rec.get('UntID')===record.get('UntID')){
+                    this.showMarkerInfoWindow(rec.get('Marker'));
+                }
+
+            },this);
+
+        } else {
+             this.getMapMarkerStore().each(function(rec){
+                rec.get('Marker').setVisible(true);
+            },this);
+
+            if(!Ext.isEmpty(this.lastUntMarker)){
+                this.hideMarkerInfoWindow(this.lastUntMarker);
+            }
+        }
+
+
+
+        //centre\zoom on selected vehicle
+        this.resetMap();
+
 
     }
 

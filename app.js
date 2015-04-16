@@ -15,14 +15,19 @@
 
 // @require @packageOverrides
 Ext.Loader.setConfig({
-    enabled: true
+    enabled: true,
+    paths: {
+        Ext: 'http://static.pinpointers.com/Lib/Sencha/ExtJS/4.2.1/src'
+    }
 });
 
 
 Ext.application({
 
     requires: [
-        'Ext.window.MessageBox'
+        'Ext.Loader',
+        'Ext.window.MessageBox',
+        'Ext.layout.container.Border'
     ],
     models: [
         'LastReportedEvent'
@@ -115,6 +120,12 @@ Ext.application({
                 }
             }
         });
+    },
+
+    getLastReportedEventHtml: function(record) {
+        var journeyStatusCls=(record.data.InJourney ? 'inJourney': 'outJourney'),
+            rowBody = '<div class="lastreportedeventrow"><b>'+record.get("EventDTDisplay")+'</b> - '+record.get("Location")+'</div>';
+        return '<div class = "unitname-header"><span class="journeystatusicon '+journeyStatusCls+'"></span></div><span class="unitname">' + record.get('UnitName') + '</span>' + rowBody;
     }
 
 });

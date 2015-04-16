@@ -20,8 +20,8 @@ Ext.define('LiveUpdates.view.CurrentLocationsGrid', {
     requires: [
         'Ext.grid.column.Column',
         'Ext.grid.View',
+        'Ext.selection.RowModel',
         'Ext.toolbar.Toolbar',
-        'Ext.form.field.Text',
         'Ext.button.Button'
     ],
 
@@ -39,11 +39,7 @@ Ext.define('LiveUpdates.view.CurrentLocationsGrid', {
                 {
                     xtype: 'gridcolumn',
                     renderer: function(value, metaData, record, rowIndex, colIndex, store, view) {
-                        var journeyStatusCls=(record.data.InJourney ? 'inJourney': 'outJourney'),
-                            rowBody = '<div class="lastreportedeventrow"><b>'+record.get("EventDTDisplay")+'</b> - '+record.get("Location")+'</div>';
-
-                        //return '<img src="http://images.pinpointers.com/PP3/'+icon+'.png"/>' + record.get('UnitName') + rowBody;
-                        return '<div class = "unitname-header"><span class="journeystatusicon '+journeyStatusCls+'"></span></div><span class="unitname">' + record.get('UnitName') + '</span>' + rowBody;
+                        return LiveUpdates.app.getLastReportedEventHtml(record);
                     },
                     dataIndex: 'UnitName',
                     flex: 1
@@ -52,21 +48,24 @@ Ext.define('LiveUpdates.view.CurrentLocationsGrid', {
             viewConfig: {
                 loadMask: false
             },
+            selModel: Ext.create('Ext.selection.RowModel', {
+                allowDeselect: true,
+                mode: 'SINGLE',
+                ignoreRightMouseSelection: true
+            }),
             dockedItems: [
                 {
                     xtype: 'toolbar',
                     dock: 'top',
+                    defaultButtonUI: 'default',
                     items: [
                         {
-                            xtype: 'textfield',
-                            width: 180,
-                            hideEmptyLabel: false,
-                            hideLabel: true,
-                            emptyText: 'Search Fleet'
-                        },
-                        {
                             xtype: 'button',
-                            text: 'X'
+                            handler: function(button, e) {
+                                button.up('gridpanel').getSelectionModel().deselectAll();
+                            },
+                            itemId: 'btnClear',
+                            text: 'Clear Selection'
                         }
                     ]
                 }

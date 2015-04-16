@@ -35,9 +35,11 @@ Ext.define('LiveUpdates.view.MapPanel', {
                 {
                     xtype: 'toolbar',
                     dock: 'top',
+                    defaultButtonUI: 'default',
                     items: [
                         {
                             xtype: 'button',
+                            itemId: 'btnReset',
                             text: 'Reset Map'
                         },
                         {
@@ -45,6 +47,7 @@ Ext.define('LiveUpdates.view.MapPanel', {
                         },
                         {
                             xtype: 'button',
+                            itemId: 'btnTraffic',
                             enableToggle: true,
                             text: 'Show Traffic'
                         }
